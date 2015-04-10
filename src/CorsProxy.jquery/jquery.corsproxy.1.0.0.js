@@ -29,6 +29,12 @@ if ($.ajaxPrefilter) {
 
         if (getIeVersion() && getIeVersion() < 10) {
             var url = options.url;
+            var questionPos = url.indexOf('?');
+            if (questionPos == -1) {
+                url += '?' + options.data;
+            } else {
+                url += '&' + options.data;
+            }
             options.beforeSend = function (request) {
                 request.setRequestHeader("X-CorsProxy-Url", url);
             };
@@ -48,6 +54,12 @@ if ($.ajaxPrefilter) {
             }
             if (getIeVersion() && getIeVersion() < 10) {
                 var url = options.url;
+				var questionPos = url.indexOf('?');
+				if (questionPos == -1) {
+					url += '?' + options.data;
+				} else {
+					url += '&' + options.data;
+				}
                 options.beforeSend = function (request) {
                     request.setRequestHeader("X-CorsProxy-Url", url);
                 };

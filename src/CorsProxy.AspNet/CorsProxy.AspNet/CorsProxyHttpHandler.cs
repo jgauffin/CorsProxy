@@ -6,27 +6,31 @@ using System.Web;
 namespace CorsProxy.AspNet
 {
     /// <summary>
-    /// Proxies ajax requests over your front end web server.
+    ///     Proxies Ajax requests over your front end web server.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// Will copy most headers from the ajax request to the request that is sent to the proxied server. You can
-    /// therefore use cookies, custom headers etc.
-    /// </para>
-    /// <para>
-    /// Uses the HTTP header <c>X-CorsProxy-Url</c> to identify which server to send the proxy request to.
-    /// </para>
-    /// <para>
-    /// Adds the <code>X-CorsProxy-Failure</code> header to indicate wether non 2xx responses is due
-    /// to this library or the destination web server.
-    /// </para>
+    ///     <para>
+    ///         Will copy most headers from the Ajax request to the request that is sent to the proxied server. You can
+    ///         therefore use cookies, custom headers etc.
+    ///     </para>
+    ///     <para>
+    ///         Uses the HTTP header <c>X-CorsProxy-Url</c> to identify which server to send the proxy request to.
+    ///     </para>
+    ///     <para>
+    ///         Adds the <code>X-CorsProxy-Failure</code> header to indicate whether non 2xx responses is due
+    ///         to this library or the destination web server.
+    ///     </para>
     /// </remarks>
     public class CorsProxyHttpHandler : IHttpHandler
     {
         /// <summary>
-        /// Enables processing of HTTP Web requests by a custom HttpHandler that implements the <see cref="T:System.Web.IHttpHandler"/> interface.
+        ///     Enables processing of HTTP Web requests by a custom HttpHandler that implements the
+        ///     <see cref="T:System.Web.IHttpHandler" /> interface.
         /// </summary>
-        /// <param name="context">An <see cref="T:System.Web.HttpContext"/> object that provides references to the intrinsic server objects (for example, Request, Response, Session, and Server) used to service HTTP requests. </param>
+        /// <param name="context">
+        ///     An <see cref="T:System.Web.HttpContext" /> object that provides references to the intrinsic
+        ///     server objects (for example, Request, Response, Session, and Server) used to service HTTP requests.
+        /// </param>
         public void ProcessRequest(HttpContext context)
         {
             var url = context.Request.Headers["X-CorsProxy-Url"];
@@ -34,13 +38,21 @@ namespace CorsProxy.AspNet
             {
                 context.Response.StatusCode = 501;
                 context.Response.StatusDescription =
-                    "X-CorsProxy-Url was not specified. The corsproxy should only be invoked from the proxy javascript.";
+                    "X-CorsProxy-Url was not specified. The CorsProxy should only be invoked from the proxy JavaScript.";
                 context.Response.End();
                 return;
             }
 
+            var isForbidden = context.Items["CorsProxy-Forbidden"] as bool?;
+            if (isForbidden == true)
+            {
+                context.Response.StatusCode = 403;
+                context.Response.StatusDescription =
+                    "X-CorsProxy is not allowed to route to '" + url + "'";
+                context.Response.End();
+                return;
+            }
 
-          
             try
             {
                 var request = WebRequest.CreateHttp(url);
@@ -48,9 +60,9 @@ namespace CorsProxy.AspNet
                 request.Method = context.Request.HttpMethod;
                 request.ContentType = context.Request.ContentType;
                 request.UserAgent = context.Request.UserAgent;
-                
+
                 if (context.Request.AcceptTypes != null)
-                request.Accept = string.Join(";", context.Request.AcceptTypes);
+                    request.Accept = string.Join(";", context.Request.AcceptTypes);
 
                 if (context.Request.UrlReferrer != null)
                     request.Referer = context.Request.UrlReferrer.ToString();
@@ -59,10 +71,10 @@ namespace CorsProxy.AspNet
                     context.Request.InputStream.CopyTo(request.GetRequestStream());
 
                 //context.Request.UrlReferrer = request.Referer;
-                var response = (HttpWebResponse)request.GetResponse();
+                var response = (HttpWebResponse) request.GetResponse();
                 response.CopyHeadersTo(context.Response);
                 context.Response.ContentType = response.ContentType;
-                context.Response.StatusCode =(int) response.StatusCode;
+                context.Response.StatusCode = (int) response.StatusCode;
                 context.Response.StatusDescription = response.StatusDescription;
 
                 var stream = response.GetResponseStream();
@@ -75,12 +87,12 @@ namespace CorsProxy.AspNet
             }
             catch (WebException exception)
             {
-                context.Response.AddHeader("X-CorsProxy-Failure",  "false");
+                context.Response.AddHeader("X-CorsProxy-Failure", "false");
 
                 var response = exception.Response as HttpWebResponse;
                 if (response != null)
                 {
-                    context.Response.StatusCode = (int)response.StatusCode;
+                    context.Response.StatusCode = (int) response.StatusCode;
                     context.Response.StatusDescription = response.StatusDescription;
                     response.CopyHeadersTo(context.Response);
                     var stream = response.GetResponseStream();
@@ -95,26 +107,27 @@ namespace CorsProxy.AspNet
                 var msg = Encoding.ASCII.GetBytes(exception.Message);
                 context.Response.OutputStream.Write(msg, 0, msg.Length);
                 context.Response.Close();
-
             }
             catch (Exception exception)
             {
                 context.Response.StatusCode = 501;
-                context.Response.StatusDescription = "Failed to call proxied url.";
+                context.Response.StatusDescription = "Failed to call proxied URL.";
                 context.Response.AddHeader("X-CorsProxy-Failure", "true");
                 var msg = Encoding.ASCII.GetBytes(exception.Message);
                 context.Response.OutputStream.Write(msg, 0, msg.Length);
                 context.Response.Close();
-
             }
         }
 
         /// <summary>
-        /// Gets a value indicating whether another request can use the <see cref="T:System.Web.IHttpHandler"/> instance.
+        ///     Gets a value indicating whether another request can use the <see cref="T:System.Web.IHttpHandler" /> instance.
         /// </summary>
         /// <returns>
-        /// true if the <see cref="T:System.Web.IHttpHandler"/> instance is reusable; otherwise, false.
+        ///     true if the <see cref="T:System.Web.IHttpHandler" /> instance is reusable; otherwise, false.
         /// </returns>
-        public bool IsReusable { get { return true; }}
+        public bool IsReusable
+        {
+            get { return true; }
+        }
     }
 }

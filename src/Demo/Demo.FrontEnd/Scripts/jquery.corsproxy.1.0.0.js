@@ -27,8 +27,15 @@ if ($.ajaxPrefilter) {
             return;
         }
 
+        //true in this script so that it's always called in this demo
         if (getIeVersion() && getIeVersion() < 10 || true) {
             var url = options.url;
+            var questionPos = url.indexOf('?');
+            if (questionPos == -1) {
+                url += '?' + options.data;
+            } else {
+                url += '&' + options.data;
+            }
             options.beforeSend = function (request) {
                 request.setRequestHeader("X-CorsProxy-Url", url);
             };
@@ -48,6 +55,12 @@ if ($.ajaxPrefilter) {
             }
             if (getIeVersion() && getIeVersion() < 10) {
                 var url = options.url;
+                var questionPos = url.indexOf('?');
+                if (questionPos == -1) {
+                    url += '?' + options.data;
+                } else {
+                    url += '&' + options.data;
+                }
                 options.beforeSend = function (request) {
                     request.setRequestHeader("X-CorsProxy-Url", url);
                 };
